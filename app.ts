@@ -1,25 +1,39 @@
-
 import express from 'express';
 import cors from 'cors';
+import * as dotenv from 'dotenv';
 import paymentRoutes from './routes/payment.routes';
 import matchingRoutes from './routes/matching.routes';
 
+// 1. Load environment variables (.env)
+dotenv.config();
+
 const app = express();
 
-// Middleware
+// 2. Middleware
 app.use(cors());
-// Fixed: Explicitly cast express.json() to any to avoid overload mismatch in environments where RequestHandler types are shadowed or incorrectly resolved.
+// Cast to 'any' to handle specific TypeScript environment typing quirks
 app.use(express.json() as any);
 
-// Routes
+// 3. Routes
 app.use('/api/payments', paymentRoutes);
 app.use('/api/matching', matchingRoutes);
 
-// Error Handling
-// Fixed: Use 'any' for the response object to bypass "status" property missing errors on the Express Response type in this execution context.
+// 4. Health Check Endpoint
+app.get('/', (req, res) => {
+  res.send({ status: 'Knot Backend is active and running!' });
+});
+
+// 5. Error Handling Middleware
 app.use((err: any, req: express.Request, res: any, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).send({ error: 'Something went wrong!' });
+  console.error('Server Error:', err.stack);
+  res.status(500).send({ error: 'Something went wrong on the server!' });
+});
+
+// 6. Start the Server
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server initialized on port ${PORT}`);
+  console.log(`Local link: http://localhost:${PORT}`);
 });
 
 export default app;
