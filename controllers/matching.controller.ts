@@ -1,87 +1,63 @@
-import { Request, Response } from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { supabase } from "../lib/supabase";
+import { Request, Response } from 'express';
+// Fixed: Using the latest official unified SDK
+import { GoogleGenAI } from "@google/genai";
+import { supabase } from '../lib/supabase';
 
 export const getMatches = async (req: Request, res: Response) => {
   try {
     const { userId, targetId } = req.body;
 
     if (!userId || !targetId) {
-      return res.status(400).json({
-        error: "userId and targetId are required"
+      return res.status(400).json({ error: "userId and targetId are required" });
+    }
+
+    // 1. Fetch both profiles from Supabase
+    const { data: profiles, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', [userId, targetId]);
+
+    if (fetchError || !profiles || profiles.length < 2) {
+      return res.status(404).json({ 
+        error: "Profiles not found. Make sure both IDs exist in the profiles table." 
       });
     }
 
-    // 1️⃣ Fetch users (NOT profiles)
-    const { data: users, error: fetchError } = await supabase
-      .from("users")
-      .select("*")
-      .in("id", [userId, targetId]);
+    const userProfile = profiles.find(p => p.id === userId);
+    const targetProfile = profiles.find(p => p.id === targetId);
 
-    if (fetchError || !users || users.length !== 2) {
-      return res.status(404).json({
-        error: "Could not find both users"
-      });
-    }
+    // 2. Initialize Gemini AI with the new unified Client
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    
+    const prompt = `
+      Analyze matrimonial compatibility between:
+      Person A: ${JSON.stringify(userProfile)}
+      Person B: ${JSON.stringify(targetProfile)}
 
-    const userA = users.find(u => u.id === userId);
-    const userB = users.find(u => u.id === targetId);
+      Instructions:
+      1. Provide a score (0-100).
+      2. Provide a 2-sentence insight.
+      3. Return ONLY a valid JSON object: {"score": 85, "insight": "..."}
+    `;
 
-    if (!userA || !userB) {
-      return res.status(404).json({
-        error: "Invalid user IDs"
-      });
-    }
-
-    // 2️⃣ Gemini setup
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not set");
-    }
-
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash"
+    // New SDK Method: models.generateContent
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
-    const prompt = `
-You are a matrimonial compatibility expert.
+    const responseText = response.text || "{}";
+    
+    // Clean and Parse JSON
+    const cleanedJson = responseText.replace(/```json|```/g, "").trim();
+    const aiData = JSON.parse(cleanedJson);
 
-Compare the following two people and respond ONLY with valid JSON.
-
-Person A:
-${JSON.stringify(userA)}
-
-Person B:
-${JSON.stringify(userB)}
-
-Rules:
-- Score must be between 0 and 100
-- Insight must be max 2 sentences
-- Output ONLY JSON
-- No markdown, no explanations
-
-Format:
-{"score": number, "insight": string}
-`;
-
-    const result = await model.generateContent(prompt);
-    const rawText = result.response.text();
-
-    // 3️⃣ Safe JSON extraction
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-
-    if (!jsonMatch) {
-      throw new Error("Invalid AI response format");
-    }
-
-    const aiData = JSON.parse(jsonMatch[0]);
-
-    // 4️⃣ Save match (CORRECT COLUMN NAMES)
+    // 3. Save to Supabase
     const { data: savedMatch, error: saveError } = await supabase
-      .from("matches")
+      .from('matches')
       .insert({
         user_id: userId,
-        matched_user_id: targetId,
+        target_id: targetId,
         compatibility_score: aiData.score,
         compatibility_insight: aiData.insight
       })
@@ -89,21 +65,14 @@ Format:
       .single();
 
     if (saveError) {
-      console.error("Match Save Error:", saveError);
-      return res.json({
-        score: aiData.score,
-        insight: aiData.insight,
-        saved: false
-      });
+      console.error("Supabase Save Error:", saveError);
+      return res.json({ ...aiData, note: "Calculated but not saved." });
     }
 
-    return res.json(savedMatch);
+    res.json(savedMatch);
 
   } catch (error: any) {
-    console.error("Match Controller Error:", error);
-    return res.status(500).json({
-      error: "Failed to process match",
-      message: error.message
-    });
+    console.error("Match Error:", error);
+    res.status(500).json({ error: "Matching failed", details: error.message });
   }
 };
