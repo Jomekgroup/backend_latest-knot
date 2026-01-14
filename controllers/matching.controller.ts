@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { GoogleGenAI } from "@google/generative-ai";
+// Fixed: Changed from GoogleGenAI to GoogleGenerativeAI
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from '../lib/supabase';
 
 export const getMatches = async (req: Request, res: Response) => {
@@ -18,35 +19,38 @@ export const getMatches = async (req: Request, res: Response) => {
 
     if (fetchError || !profiles || profiles.length < 2) {
       return res.status(404).json({ 
-        error: "Could not find both profiles. Make sure the IDs exist in the profiles table." 
+        error: "Could not find both profiles. Ensure IDs are correct in the profiles table." 
       });
     }
 
     const userProfile = profiles.find(p => p.id === userId);
     const targetProfile = profiles.find(p => p.id === targetId);
 
-    // 2. Initialize Gemini AI
-    const genAI = new GoogleGenAI(process.env.API_KEY || '');
+    // 2. Initialize Gemini AI with correct class name
+    const genAI = new GoogleGenerativeAI(process.env.API_KEY || '');
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
-      Analyze the matrimonial compatibility between these two individuals:
-      
+      Analyze matrimonial compatibility between:
       Person A: ${JSON.stringify(userProfile)}
       Person B: ${JSON.stringify(targetProfile)}
 
       Instructions:
-      1. Provide a compatibility score between 0 and 100.
-      2. Provide a 2-sentence insight explaining why they are or aren't a match based on their values, religion, and lifestyle.
-      3. Return ONLY a valid JSON object like this: 
-      {"score": 85, "insight": "Both share strong Christian values and a love for travel..."}
+      1. Provide a compatibility score (0-100).
+      2. Provide a 2-sentence insight on values, religion, and lifestyle.
+      3. Return ONLY a valid JSON object. Do not include markdown formatting.
+      Example format: {"score": 85, "insight": "Example text..."}
     `;
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
     
-    // Clean the response (sometimes AI adds markdown code blocks)
-    const cleanedJson = responseText.replace(/```json|```/g, "").trim();
+    // Improved JSON cleaning: Removes markdown blocks, backticks, and whitespace
+    const cleanedJson = responseText
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+    
     const aiData = JSON.parse(cleanedJson);
 
     // 3. Save the match result to the database
@@ -63,11 +67,14 @@ export const getMatches = async (req: Request, res: Response) => {
 
     if (saveError) {
       console.error("Database Save Error:", saveError);
-      // We still return the AI data even if the save fails
-      return res.json({ ...aiData, note: "Match calculated but not saved to DB" });
+      // Fallback: return AI data if database insert fails
+      return res.json({ 
+        ...aiData, 
+        id: 'temp-id', 
+        note: "Result calculated but failed to save to history." 
+      });
     }
 
-    // Return the saved record (which now includes an ID and timestamp)
     res.json(savedMatch);
 
   } catch (error: any) {
