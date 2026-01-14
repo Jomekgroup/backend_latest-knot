@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "Knot backend service",
   "main": "dist/server.js",
+  "type": "commonjs",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only server.ts"
   },
   "dependencies": {
-    "@google/genai": "^1.35.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.90.1",
     "axios": "^1.7.9",
@@ -25,5 +25,8 @@
     "@types/pg": "^8.11.10",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
