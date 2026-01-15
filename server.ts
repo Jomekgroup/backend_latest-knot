@@ -1,4 +1,4 @@
-import 'dotenv/config'; // 👈 This must be line #1
+import 'dotenv/config'; // Loads variables BEFORE app is imported
 import app from './app';
 
 const PORT = Number(process.env.PORT) || 10000;

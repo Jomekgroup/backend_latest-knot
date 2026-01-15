@@ -10,7 +10,17 @@ dotenv.config();
 const app = express();
 
 // 2. Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000',          // Local React
+    'http://localhost:5173',          // Local Vite
+    'https://knot-p5gn.vercel.app'    // Your specific Vercel Frontend
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json() as any);
 
 // 3. Routes
@@ -27,8 +37,5 @@ app.use((err: any, req: express.Request, res: any, next: express.NextFunction) =
   console.error('Server Error:', err.stack);
   res.status(500).send({ error: 'Something went wrong on the server!' });
 });
-
-// REMOVED SECTION 6 (Start the Server) FROM HERE
-// server.ts will handle starting the app now.
 
 export default app;
