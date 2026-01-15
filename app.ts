@@ -31,9 +31,8 @@ app.use((err: any, req: express.Request, res: any, next: express.NextFunction) =
 
 // 6. Start the Server
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server initialized on port ${PORT}`);
-  console.log(`Local link: http://localhost:${PORT}`);
-});
 
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server is flying on port ${PORT}`);
+});
 export default app;
