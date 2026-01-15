@@ -30,12 +30,13 @@ app.use((err: any, req: express.Request, res: any, next: express.NextFunction) =
 });
 
 // 6. Start the Server
-// Convert the port to a number explicitly
-const PORT = Number(process.env.PORT) || 10000;
+// We explicitly cast the environment variable to a number to satisfy TS Overload rules
+const PORT: number = parseInt(process.env.PORT || '10000', 10);
 
-// Pass the port as a number
+// Binding to '0.0.0.0' is required for Render/Cloud deployments
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is flying on port ${PORT}`);
   console.log(`Local link: http://localhost:${PORT}`);
 });
+
 export default app;
