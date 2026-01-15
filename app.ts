@@ -11,7 +11,6 @@ const app = express();
 
 // 2. Middleware
 app.use(cors());
-// Cast to 'any' to handle specific TypeScript environment typing quirks
 app.use(express.json() as any);
 
 // 3. Routes
@@ -29,14 +28,7 @@ app.use((err: any, req: express.Request, res: any, next: express.NextFunction) =
   res.status(500).send({ error: 'Something went wrong on the server!' });
 });
 
-// 6. Start the Server
-// We explicitly cast the environment variable to a number to satisfy TS Overload rules
-const PORT: number = parseInt(process.env.PORT || '10000', 10);
-
-// Binding to '0.0.0.0' is required for Render/Cloud deployments
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server is flying on port ${PORT}`);
-  console.log(`Local link: http://localhost:${PORT}`);
-});
+// REMOVED SECTION 6 (Start the Server) FROM HERE
+// server.ts will handle starting the app now.
 
 export default app;
