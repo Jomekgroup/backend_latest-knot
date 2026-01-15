@@ -30,9 +30,12 @@ app.use((err: any, req: express.Request, res: any, next: express.NextFunction) =
 });
 
 // 6. Start the Server
-const PORT = process.env.PORT || 10000;
+// Convert the port to a number explicitly
+const PORT = Number(process.env.PORT) || 10000;
 
+// Pass the port as a number
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is flying on port ${PORT}`);
+  console.log(`Local link: http://localhost:${PORT}`);
 });
 export default app;
