@@ -1,4 +1,6 @@
 import 'dotenv/config'; // Loads variables BEFORE app is imported
+
+console.log("Paystack Key Loaded:", process.env.PAYSTACK_SECRET_KEY ? "✅ YES" : "❌ NO");
 import app from './app';
 
 const PORT = Number(process.env.PORT) || 10000;

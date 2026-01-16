@@ -7,6 +7,7 @@ import matchingRoutes from './routes/matching.routes';
 // 1. Load environment variables (.env)
 dotenv.config();
 
+console.log("Paystack Key Loaded:", process.env.PAYSTACK_SECRET_KEY ? "✅ YES" : "❌ NO");
 const app = express();
 
 // 2. Middleware
