@@ -3,33 +3,38 @@ import cors from 'cors';
 import * as dotenv from 'dotenv';
 import paymentRoutes from './routes/payment.routes';
 import matchingRoutes from './routes/matching.routes';
-// Import your database pool/client (assuming you use 'pg')
 import db from './services/db'; 
 
+// 1. Load environment variables
 dotenv.config();
+
+console.log("Paystack Key Loaded:", process.env.PAYSTACK_SECRET_KEY ? "✅ YES" : "❌ NO");
 
 const app = express();
 
-// 2. Middleware
+// 2. Professional Middleware & CORS Configuration
+// Updated to include your live knot-latest domain
 app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:5173',
-    'https://knot-p5gn.vercel.app',
-    'https://knot-registry.vercel.app' // Added your probable production URL
+    'https://knot-latest.vercel.app',  // Your current primary frontend
+    'https://knot-p5gn.vercel.app',    // Backup/Legacy frontend
+    'https://knot-registry.vercel.app' 
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+// Use explicit casting for express.json if needed in your TS environment
+app.use(express.json() as any);
 
-// --- NEW: USER SYNC ROUTE ---
-app.post('/api/users/sync', async (req, res) => {
+// 3. User Synchronization Route (Supabase Handshake)
+app.post('/api/users/sync', async (req: express.Request, res: any) => {
     const { id, email, name, avatar_url } = req.body;
 
-    // This query ensures we don't get duplicate users (UPSERT)
+    // Professional Upsert: Prevents duplicate users, updates existing ones
     const upsertQuery = `
         INSERT INTO users (id, email, name, avatar_url, last_login)
         VALUES ($1, $2, $3, $4, NOW())
@@ -43,28 +48,30 @@ app.post('/api/users/sync', async (req, res) => {
 
     try {
         const result = await db.query(upsertQuery, [id, email, name, avatar_url]);
-        console.log(`✅ Sync: User ${email} updated in database.`);
+        console.log(`✅ Sync Success: User ${email} updated in PostgreSQL.`);
         res.status(200).json(result.rows[0]);
     } catch (error: any) {
-        console.error('❌ Sync Error:', error.message);
-        res.status(500).json({ error: 'Database synchronization failed' });
+        console.error('❌ Sync Database Error:', error.message);
+        res.status(500).json({ error: 'Failed to synchronize user data' });
     }
 });
 
-// 3. Existing Routes
+// 4. Feature Routes
 app.use('/api/payments', paymentRoutes);
 app.use('/api/matching', matchingRoutes);
 
-// ... rest of your code (Health Check & Error Handling)
-// 4. Health Check Endpoint
+// 5. Health Check Endpoint (For Render to confirm the service is up)
 app.get('/', (req, res) => {
   res.send({ status: 'Knot Backend is active and running!' });
 });
 
-// 5. Error Handling Middleware
+// 6. Global Error Handling Middleware
 app.use((err: any, req: express.Request, res: any, next: express.NextFunction) => {
-  console.error('Server Error:', err.stack);
-  res.status(500).send({ error: 'Something went wrong on the server!' });
+  console.error('Critical Server Error:', err.stack);
+  res.status(500).send({ 
+      error: 'Something went wrong on the server!',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 export default app;
