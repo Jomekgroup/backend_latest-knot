@@ -13,13 +13,12 @@ console.log("Paystack Key Loaded:", process.env.PAYSTACK_SECRET_KEY ? "✅ YES" 
 const app = express();
 
 // 2. Professional Middleware & CORS Configuration
-// Updated to include your live knot-latest domain
 app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:5173',
-    'https://knot-latest.vercel.app',  // Your current primary frontend
-    'https://knot-p5gn.vercel.app',    // Backup/Legacy frontend
+    'https://knot-latest.vercel.app',  
+    'https://knot-p5gn.vercel.app',    
     'https://knot-registry.vercel.app' 
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -27,27 +26,26 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Use explicit casting for express.json if needed in your TS environment
 app.use(express.json() as any);
 
-// 3. User Synchronization Route (Supabase Handshake)
+// 3. User Synchronization Route
 app.post('/api/users/sync', async (req: express.Request, res: any) => {
-    const { id, email, name, avatar_url } = req.body;
+    // Note: ensure these field names match exactly what your frontend AuthScreen sends
+    const { id, email, name, image } = req.body;
 
-    // Professional Upsert: Prevents duplicate users, updates existing ones
     const upsertQuery = `
-        INSERT INTO users (id, email, name, avatar_url, last_login)
+        INSERT INTO users (id, email, name, image, last_login)
         VALUES ($1, $2, $3, $4, NOW())
         ON CONFLICT (id) 
         DO UPDATE SET 
             name = EXCLUDED.name,
-            avatar_url = EXCLUDED.avatar_url,
+            image = EXCLUDED.image,
             last_login = NOW()
         RETURNING *;
     `;
 
     try {
-        const result = await db.query(upsertQuery, [id, email, name, avatar_url]);
+        const result = await db.query(upsertQuery, [id, email, name, image]);
         console.log(`✅ Sync Success: User ${email} updated in PostgreSQL.`);
         res.status(200).json(result.rows[0]);
     } catch (error: any) {
@@ -58,14 +56,19 @@ app.post('/api/users/sync', async (req: express.Request, res: any) => {
 
 // 4. Feature Routes
 app.use('/api/payments', paymentRoutes);
-app.use('/api/matching', matchingRoutes);
 
-// 5. Health Check Endpoint (For Render to confirm the service is up)
+/**
+ * FIX: Changed from '/api/matching' to '/api/matches'
+ * This resolves the 404 error your frontend was getting.
+ */
+app.use('/api/matches', matchingRoutes);
+
+// 5. Health Check
 app.get('/', (req, res) => {
   res.send({ status: 'Knot Backend is active and running!' });
 });
 
-// 6. Global Error Handling Middleware
+// 6. Global Error Handling
 app.use((err: any, req: express.Request, res: any, next: express.NextFunction) => {
   console.error('Critical Server Error:', err.stack);
   res.status(500).send({ 
