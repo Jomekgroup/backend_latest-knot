@@ -12,11 +12,7 @@ const pool = new Pool({
   },
 });
 
-// Helper function to run queries (NAMED EXPORT - Keep this for your other files)
+// Helper function to run queries
 export const query = (text: string, params?: any[]) => {
   return pool.query(text, params);
 };
-
-// DEFAULT EXPORT (This fixes the error in app.ts)
-// This allows 'import db from ./services/db' to work
-export default pool;
