@@ -5,10 +5,10 @@
   "main": "dist/server.js",
   "type": "commonjs",
   "scripts": {
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "dev": "ts-node-dev --respawn --transpile-only server.ts" 
-}
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only server.ts"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
     "axios": "^1.7.9",

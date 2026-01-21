@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "outDir": "./dist",       // Where the code goes after building
-    "rootDir": "./",          // Where your .ts files are (the root)
-    "module": "CommonJS",
     "target": "ES6",
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["**/*.ts"],     // Include all TS files in the project
-  "exclude": ["node_modules"]
+  "include": ["server.ts", "app.ts", "routes/**/*.ts", "services/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }
