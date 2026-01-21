@@ -16,3 +16,8 @@ const pool = new Pool({
 export const query = (text: string, params?: any[]) => {
   return pool.query(text, params);
 };
+
+/** * FIX: Default export for app.ts
+ * This allows "import db from './services/db'" to work correctly.
+ */
+export default pool;
