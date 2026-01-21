@@ -28,13 +28,17 @@ app.use(cors({
 
 app.use(express.json() as any);
 
-// 3. User Synchronization Route
+// 3. User Synchronization Route (Supabase Handshake)
 app.post('/api/users/sync', async (req: express.Request, res: any) => {
-    // Note: ensure these field names match exactly what your frontend AuthScreen sends
+    // Destructuring 'image' to match your frontend logic
     const { id, email, name, image } = req.body;
 
+    /**
+     * FIX: Pointing explicitly to public.users.
+     * This ensures the backend doesn't try to write to the protected auth schema.
+     */
     const upsertQuery = `
-        INSERT INTO users (id, email, name, image, last_login)
+        INSERT INTO public.users (id, email, name, image, last_login)
         VALUES ($1, $2, $3, $4, NOW())
         ON CONFLICT (id) 
         DO UPDATE SET 
@@ -46,11 +50,11 @@ app.post('/api/users/sync', async (req: express.Request, res: any) => {
 
     try {
         const result = await db.query(upsertQuery, [id, email, name, image]);
-        console.log(`✅ Sync Success: User ${email} updated in PostgreSQL.`);
+        console.log(`✅ Sync Success: User ${email} synchronized.`);
         res.status(200).json(result.rows[0]);
     } catch (error: any) {
         console.error('❌ Sync Database Error:', error.message);
-        res.status(500).json({ error: 'Failed to synchronize user data' });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -58,12 +62,25 @@ app.post('/api/users/sync', async (req: express.Request, res: any) => {
 app.use('/api/payments', paymentRoutes);
 
 /**
- * FIX: Changed from '/api/matching' to '/api/matches'
- * This resolves the 404 error your frontend was getting.
+ * FIX: Route aligned with Frontend databaseService.ts
+ * Resolves the 404 error on /api/matches
  */
 app.use('/api/matches', matchingRoutes);
 
-// 5. Health Check
+// 5. Deep Health Check (Verifies Server + Database Connection)
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbCheck = await db.query('SELECT NOW()');
+    res.send({ 
+      status: 'active', 
+      database: 'connected',
+      timestamp: dbCheck.rows[0].now 
+    });
+  } catch (err: any) {
+    res.status(500).send({ status: 'error', database: 'disconnected', details: err.message });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send({ status: 'Knot Backend is active and running!' });
 });
