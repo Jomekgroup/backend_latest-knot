@@ -1,0 +1,29 @@
+{
+    "name": "knot-backend",
+    "version": "1.0.0",
+    "description": "Backend for Knot application",
+    "main": "server.ts",
+    "scripts": {
+        "start": "ts-node server.ts",
+        "dev": "nodemon server.ts",
+        "build": "tsc"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.18.2",
+        "cors": "^2.8.5",
+        "@supabase/supabase-js": "^2.39.3",
+        "dotenv": "^16.4.1",
+        "axios": "^1.6.7"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.3",
+        "typescript": "^5.3.3",
+        "ts-node": "^10.9.2",
+        "@types/node": "^20.11.16",
+        "@types/express": "^4.17.21",
+        "@types/cors": "^2.8.17"
+    }
+}
