@@ -1,9 +1,7 @@
-import signupRoutes from './routes/signup.routes';
-app.use('/api/signup', signupRoutes);
-
 import express from 'express';
 import cors from 'cors';
 
+import signupRoutes from './routes/signup.routes';
 import paymentRoutes from './routes/payment.routes';
 import matchingRoutes from './routes/matching.routes';
 import authRoutes from './routes/auth.routes';
@@ -20,7 +18,7 @@ app.get('/', (req, res) => {
 });
 
 // Routes
-
+app.use('/api/signup', signupRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/matching', matchingRoutes);
 app.use('/api/auth', authRoutes);
