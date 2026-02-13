@@ -14,6 +14,11 @@ const app = express();
 app.use(cors());
 app.use(express.json() as any);
 
+// Health Check
+app.get('/', (req, res) => {
+  res.json({ status: 'Knot Backend v2 - Deployed via GitHub!' });
+});
+
 // Routes
 
 app.use('/api/payments', paymentRoutes);
